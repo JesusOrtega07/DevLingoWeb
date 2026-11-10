@@ -13,9 +13,10 @@ const envSchema = z.object({
       message: "DATABASE_URL debe ser una URL de PostgreSQL",
     }),
   APP_URL: z.string().url(),
-  // Header con la IP real del cliente puesto por el proxy de confianza (Cloudflare Tunnel).
-  // Vacío en desarrollo: entonces no se confía en ningún header.
-  TRUSTED_PROXY_HEADER: z.enum(["cf-connecting-ip"]).optional(),
+  // Header con la IP real del cliente puesto por el proxy de confianza (Tailscale Funnel:
+  // x-forwarded-for). Vacío en desarrollo, o si no se ha verificado el proxy: entonces no se
+  // confía en ningún header (ver DEPLOY.md).
+  TRUSTED_PROXY_HEADER: z.enum(["x-forwarded-for", "cf-connecting-ip"]).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

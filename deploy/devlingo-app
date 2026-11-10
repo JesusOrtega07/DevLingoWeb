@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Ejecuta un comando dentro de DevLingo como el usuario devlingo, con el Node de DevLingo.
+# Se instala fuera del repo (dueño root) para que el usuario devlingo no pueda modificarlo:
+#   sudo install -m 755 deploy/devlingo-app /usr/local/sbin/devlingo-app
+# Ejemplos:
+#   sudo devlingo-app npm run access-link -- admin@ejemplo.com
+#   sudo devlingo-app env NODE_ENV=production npm run db:seed
+set -euo pipefail
+
+if [[ $EUID -ne 0 ]]; then
+  echo "Usa: sudo devlingo-app <comando>" >&2
+  exit 1
+fi
+if [[ $# -eq 0 ]]; then
+  echo "Falta el comando. Ejemplo: sudo devlingo-app npm run access-link -- admin@ejemplo.com" >&2
+  exit 1
+fi
+
+cd /srv/devlingo/app
+exec sudo -u devlingo -H env PATH=/opt/devlingo/node/bin:/usr/bin:/bin NEXT_TELEMETRY_DISABLED=1 "$@"

@@ -13,8 +13,13 @@ export const RATE_LIMIT = {
   lockMs: 15 * 60 * 1000,
 } as const;
 
-export const isThrottled = (failuresForKey: number, failuresForIp: number) =>
-  failuresForKey >= RATE_LIMIT.maxFailuresPerKey || failuresForIp >= RATE_LIMIT.maxFailuresPerIp;
+/**
+ * failuresForIp es null cuando no se conoce la IP real: si se contara, todos los visitantes
+ * compartirían un solo contador y 20 fallos de cualquiera bloquearían el login de todos.
+ */
+export const isThrottled = (failuresForKey: number, failuresForIp: number | null) =>
+  failuresForKey >= RATE_LIMIT.maxFailuresPerKey ||
+  (failuresForIp !== null && failuresForIp >= RATE_LIMIT.maxFailuresPerIp);
 
 export const isLocked = (lockedUntil: Date | null, now: Date) => lockedUntil !== null && lockedUntil > now;
 

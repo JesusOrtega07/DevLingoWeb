@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Actualiza DevLingo en Fedora con lo último de GitHub:
+#   git pull → npm ci → migraciones → build → reinicio del servicio → comprobación.
+# Se instala fuera del repo (dueño root):
+#   sudo install -m 755 deploy/devlingo-update /usr/local/sbin/devlingo-update
+# Uso: sudo devlingo-update
+#
+# Solo toca /srv/devlingo/app, la base devlingo y el servicio devlingo.
+set -euo pipefail
+
+# Todo va dentro de main: bash lo lee completo antes de empezar, así que el git pull
+# puede cambiar el repo sin afectar a este script a medio ejecutar.
+main() {
+  local app_dir=/srv/devlingo/app
+
+  if [[ $EUID -ne 0 ]]; then
+    echo "Usa: sudo devlingo-update" >&2
+    exit 1
+  fi
+
+  as_app() {
+    (cd "$app_dir" && sudo -u devlingo -H env PATH=/opt/devlingo/node/bin:/usr/bin:/bin NEXT_TELEMETRY_DISABLED=1 "$@")
+  }
+
+  echo "→ Bajando cambios de GitHub"
+  as_app git pull --ff-only
+  echo "→ Instalando dependencias (npm ci)"
+  as_app npm ci
+  echo "→ Aplicando migraciones"
+  as_app npx prisma migrate deploy
+  echo "→ Compilando (npm run build)"
+  as_app npm run build
+  echo "→ Reiniciando el servicio devlingo"
+  systemctl restart devlingo
+
+  for _ in $(seq 1 30); do
+    if curl -fsS -o /dev/null http://127.0.0.1:3100/login; then
+      echo "✓ DevLingo está en línea ($(as_app git log -1 --format='%h %s'))"
+      return 0
+    fi
+    sleep 1
+  done
+  echo "✗ DevLingo no responde. Revisa: sudo journalctl -u devlingo -n 50" >&2
+  exit 1
+}
+
+main "$@"

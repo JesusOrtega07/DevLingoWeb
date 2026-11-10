@@ -13,6 +13,15 @@ export const loginSchema = z.object({
   password: z.string().min(1, { error: "Enter your password." }).max(128),
 });
 
+/**
+ * ¿La contraseña contiene la parte del email antes de la @? Con nombres de 1-2 letras ("a@...")
+ * se ignora: casi cualquier contraseña los contendría.
+ */
+export const containsEmailName = (password: string, email: string) => {
+  const name = email.split("@")[0].toLowerCase();
+  return name.length >= 3 && password.toLowerCase().includes(name);
+};
+
 export const PASSWORD_MIN = 12;
 export const PASSWORD_MAX = 128;
 

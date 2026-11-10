@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { getClientIp } from "@/features/auth/client-ip";
 import { RATE_LIMIT, isLocked, isThrottled, nextFailureState } from "@/features/auth/rate-limit-policy";
-import { loginSchema, newPasswordSchema } from "@/features/auth/schemas";
+import { containsEmailName, loginSchema, newPasswordSchema } from "@/features/auth/schemas";
 
 describe("rate limit", () => {
   it("bloquea a los 5 fallos por email+IP o 20 por IP", () => {
@@ -10,6 +10,11 @@ describe("rate limit", () => {
     expect(isThrottled(5, 0)).toBe(true);
     expect(isThrottled(0, 19)).toBe(false);
     expect(isThrottled(0, 20)).toBe(true);
+  });
+
+  it("sin IP real no limita por IP (sería un contador compartido por todos)", () => {
+    expect(isThrottled(0, null)).toBe(false);
+    expect(isThrottled(5, null)).toBe(true);
   });
 
   it("bloquea la cuenta 15 minutos al quinto fallo seguido y reinicia el contador", () => {
@@ -37,6 +42,13 @@ describe("getClientIp", () => {
 
   it("con Cloudflare usa cf-connecting-ip", () => {
     expect(getClientIp(h, "cf-connecting-ip")).toBe("203.0.113.7");
+  });
+
+  it("con x-forwarded-for usa solo la última entrada (la que añade el proxy)", () => {
+    const spoofed = new Headers({ "x-forwarded-for": "9.9.9.9, 198.51.100.4" });
+    expect(getClientIp(spoofed, "x-forwarded-for")).toBe("198.51.100.4");
+    expect(getClientIp(new Headers({ "x-forwarded-for": "198.51.100.4" }), "x-forwarded-for")).toBe("198.51.100.4");
+    expect(getClientIp(new Headers(), "x-forwarded-for")).toBe("local");
   });
 
   it("descarta valores que no parecen IP", () => {
@@ -71,5 +83,17 @@ describe("schemas", () => {
       newPasswordSchema.safeParse({ token: "../x", password: "a long passphrase", confirm: "a long passphrase" })
         .success,
     ).toBe(false);
+  });
+});
+
+describe("containsEmailName", () => {
+  it("rechaza contraseñas que contienen el nombre del email", () => {
+    expect(containsEmailName("my-Lili.Garcia-2026", "lili.garcia@unach.mx")).toBe(true);
+    expect(containsEmailName("correct horse battery", "lili.garcia@unach.mx")).toBe(false);
+  });
+
+  it("ignora nombres de 1 o 2 letras", () => {
+    expect(containsEmailName("a long passphrase here", "a@unach.mx")).toBe(false);
+    expect(containsEmailName("joke about jo", "jo@unach.mx")).toBe(false);
   });
 });

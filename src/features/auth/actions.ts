@@ -12,8 +12,8 @@ import {
   isThrottled,
   nextFailureState,
 } from "@/features/auth/rate-limit-policy";
-import { loginSchema, newPasswordSchema } from "@/features/auth/schemas";
-import { getClientIp } from "@/features/auth/client-ip";
+import { containsEmailName, loginSchema, newPasswordSchema } from "@/features/auth/schemas";
+import { UNKNOWN_IP, getClientIp } from "@/features/auth/client-ip";
 import { createSession, destroyCurrentSession } from "@/features/auth/session";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
@@ -51,7 +51,9 @@ export const login = async (_prev: FormState, formData: FormData): Promise<FormS
 
   const [keyFailures, ipFailures] = await Promise.all([
     prisma.loginAttempt.count({ where: { key, success: false, createdAt: { gte: since } } }),
-    prisma.loginAttempt.count({ where: { ip: meta.ip, success: false, createdAt: { gte: since } } }),
+    meta.ip === UNKNOWN_IP
+      ? null
+      : prisma.loginAttempt.count({ where: { ip: meta.ip, success: false, createdAt: { gte: since } } }),
   ]);
   if (isThrottled(keyFailures, ipFailures)) {
     return { error: TOO_MANY_ATTEMPTS, values: { email } };
@@ -121,7 +123,7 @@ export const acceptInvitation = async (_prev: FormState, formData: FormData): Pr
 
   const invitation = await findValidInvitation(token);
   if (!invitation) return { error: INVALID_LINK };
-  if (password.toLowerCase().includes(invitation.user.email.split("@")[0].toLowerCase())) {
+  if (containsEmailName(password, invitation.user.email)) {
     return { fieldErrors: { password: ["Don't use your email in your password."] } };
   }
 

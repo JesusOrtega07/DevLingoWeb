@@ -1,0 +1,52 @@
+# DevLingo Web como servicio de systemd (Fedora).
+# Instalar:  sudo install -m 644 deploy/devlingo.service /etc/systemd/system/devlingo.service
+#            sudo systemctl daemon-reload && sudo systemctl enable --now devlingo
+#
+# Proceso propio (usuario devlingo), puerto propio (127.0.0.1:3100) y Node propio
+# (/opt/devlingo/node). No comparte nada con "Melgar te escucha".
+
+[Unit]
+Description=DevLingo Web (Next.js)
+After=network-online.target postgresql.service
+Wants=network-online.target
+# Sin límite de reintentos: si se cae, systemd lo vuelve a levantar siempre.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=devlingo
+Group=devlingo
+WorkingDirectory=/srv/devlingo/app
+Environment=NODE_ENV=production
+Environment=NEXT_TELEMETRY_DISABLED=1
+Environment=PATH=/opt/devlingo/node/bin:/usr/bin:/bin
+# Solo escucha en 127.0.0.1: desde fuera únicamente se llega a través de Tailscale Funnel.
+ExecStart=/opt/devlingo/node/bin/node /srv/devlingo/app/node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3100
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+
+# Endurecimiento: el proceso no puede modificar el código ni el sistema, solo .next (caché).
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/devlingo/app/.next
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+AmbientCapabilities=
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

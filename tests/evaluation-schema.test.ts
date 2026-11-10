@@ -61,6 +61,13 @@ describe("evaluationSchema", () => {
     expect(evaluationSchema.safeParse(form({ heSaid: many, better: many })).success).toBe(false);
   });
 
+  it("no acepta miles de filas vacías en Mistakes heard", () => {
+    const empty = Array.from({ length: 61 }, () => "");
+    expect(evaluationSchema.safeParse(form({ heSaid: empty, better: empty })).success).toBe(false);
+    const ok = Array.from({ length: 60 }, () => "");
+    expect(evaluationSchema.safeParse(form({ heSaid: ok, better: ok })).success).toBe(true);
+  });
+
   it("rechaza un id de entrevista inválido", () => {
     expect(evaluationSchema.safeParse(form({ interviewId: "1 OR 1=1" })).success).toBe(false);
   });

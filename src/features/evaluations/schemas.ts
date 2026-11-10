@@ -6,6 +6,8 @@ export const AREA_FIELDS = ["fluency", "grammar", "vocabulary", "pronunciation",
 export type AreaField = (typeof AREA_FIELDS)[number];
 
 export const MAX_MISTAKES = 30;
+/** Filas enviadas, incluidas las vacías: un tope para que nadie mande miles de campos. */
+const MAX_MISTAKE_ROWS = MAX_MISTAKES * 2;
 
 const required = (max: number, message: string) =>
   z
@@ -28,8 +30,12 @@ export const evaluationSchema = z
     improve1: required(300, "Write the first thing to improve."),
     improve2: required(300, "Write the second thing to improve."),
     nextRound: z.enum(["YES", "MAYBE", "NO"], { error: "Choose Yes, Maybe or No." }),
-    heSaid: z.array(z.string().trim().max(300, { error: "Use at most 300 characters." })),
-    better: z.array(z.string().trim().max(300, { error: "Use at most 300 characters." })),
+    heSaid: z
+      .array(z.string().trim().max(300, { error: "Use at most 300 characters." }))
+      .max(MAX_MISTAKE_ROWS, { error: `Add at most ${MAX_MISTAKES} mistakes.` }),
+    better: z
+      .array(z.string().trim().max(300, { error: "Use at most 300 characters." }))
+      .max(MAX_MISTAKE_ROWS, { error: `Add at most ${MAX_MISTAKES} mistakes.` }),
   })
   .superRefine((v, ctx) => {
     if (v.heSaid.length !== v.better.length) {
