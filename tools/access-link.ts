@@ -11,6 +11,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { z } from "zod";
 
 import { PrismaClient } from "../src/generated/prisma/client";
+import { pgConfig } from "../src/lib/pg-config";
 import { generateToken, hashToken } from "../src/lib/security/tokens";
 
 const INVITATION_TTL_MS = 72 * 60 * 60 * 1000;
@@ -23,7 +24,7 @@ if (!emailArg.success) {
   process.exit(1);
 }
 
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: env.DATABASE_URL }) });
+const prisma = new PrismaClient({ adapter: new PrismaPg(pgConfig(env.DATABASE_URL)) });
 
 const main = async () => {
   const user = await prisma.user.findUnique({

@@ -22,6 +22,7 @@ import { z } from "zod";
 import { PrismaClient, Role } from "../src/generated/prisma/client";
 import { readMarkdownFile } from "../src/features/scripts/file";
 import { parseInterviewScript } from "../src/features/scripts/parser";
+import { pgConfig } from "../src/lib/pg-config";
 import { generateToken, hashToken } from "../src/lib/security/tokens";
 
 const INVITATION_TTL_MS = 72 * 60 * 60 * 1000;
@@ -40,7 +41,7 @@ const seedEnv = z
 
 const withDemo = seedEnv.SEED_DEMO ? seedEnv.SEED_DEMO === "true" : !isProduction;
 
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: seedEnv.DATABASE_URL }) });
+const prisma = new PrismaClient({ adapter: new PrismaPg(pgConfig(seedEnv.DATABASE_URL)) });
 
 const upsertUser = (email: string, name: string, role: Role) =>
   prisma.user.upsert({

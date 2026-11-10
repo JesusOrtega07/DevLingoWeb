@@ -3,19 +3,15 @@ import { redirect } from "next/navigation";
 
 import FadeIn from "@/components/FadeIn";
 import PageContainer from "@/components/layout/PageContainer";
+import SiteFooter from "@/components/layout/SiteFooter";
 import { idSchema } from "@/features/admin/schemas";
+import MemberInterviews from "@/features/feedback/components/MemberInterviews";
 import FamilyGrid from "@/features/interviews/components/FamilyGrid";
 import SavedToast from "@/features/interviews/components/SavedToast";
 import { getSavedNotice, listMyInterviews } from "@/features/interviews/queries";
 import { requireUser } from "@/lib/dal";
 
 export const metadata: Metadata = { title: "Interviews · DevLingo" };
-
-const Footer = () => (
-  <footer className="mx-auto box-border w-full max-w-[1440px] px-6 pb-10 font-mono text-[12px] text-cream/50 sm:px-10 lg:px-20">
-    From “Hello, World!” to “Hello, everyone!”
-  </footer>
-);
 
 // Vista de la English Expert: su DevLingo Family (mockups 02, 03 y 08).
 const ExpertFamily = async ({ savedId }: { savedId: string | null }) => {
@@ -61,7 +57,7 @@ const ExpertFamily = async ({ savedId }: { savedId: string | null }) => {
           />
         )}
       </PageContainer>
-      <Footer />
+      <SiteFooter />
     </>
   );
 };
@@ -76,14 +72,12 @@ const Page = async ({ searchParams }: PageProps<"/activities/interviews">) => {
     return <ExpertFamily savedId={savedId} />;
   }
 
-  // Member: su propio feedback llega en la fase 6.
+  // Member: solo sus propias entrevistas y su feedback ya guardado.
   return (
-    <PageContainer>
-      <div className="flex flex-col gap-1.5">
-        <p className="m-0 font-mono text-[13px] tracking-[0.08em] text-gold">&lt; Interviews /&gt;</p>
-        <h1 className="m-0 text-[26px] leading-[1.25] font-bold">Coming soon</h1>
-      </div>
-    </PageContainer>
+    <>
+      <MemberInterviews />
+      <SiteFooter />
+    </>
   );
 };
 

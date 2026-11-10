@@ -7,15 +7,9 @@ import type { AreaField } from "@/features/evaluations/schemas";
 import BlockText from "@/features/scripts/components/BlockText";
 import InlineText from "@/features/scripts/components/InlineText";
 import { getMyEvaluation, getMyInterview } from "@/features/interviews/queries";
+import { formatDateTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Score sheet · Interview · DevLingo" };
-
-const savedLabel = (date: Date) =>
-  new Intl.DateTimeFormat("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "America/Mexico_City",
-  }).format(date);
 
 // Pestaña Score sheet (mockup 06). Si ya hay evaluación, el formulario sale relleno para editarla.
 const Page = async ({ params }: PageProps<"/activities/interviews/[id]/score-sheet">) => {
@@ -68,7 +62,7 @@ const Page = async ({ params }: PageProps<"/activities/interviews/[id]/score-she
             lookAt: lookAt ? <InlineText nodes={lookAt} /> : null,
           }))}
           initial={initial}
-          saved={evaluation ? { label: savedLabel(evaluation.updatedAt), revisions: evaluation._count.revisions } : null}
+          saved={evaluation ? { label: formatDateTime(evaluation.updatedAt), revisions: evaluation._count.revisions } : null}
         />
       </FadeIn>
     </PageContainer>
