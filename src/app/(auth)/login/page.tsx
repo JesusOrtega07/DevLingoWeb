@@ -12,7 +12,7 @@ const Page = async () => {
   if (await getCurrentUser()) redirect("/");
 
   return (
-    <AuthShell tagline="< English Expert Access />">
+    <AuthShell tagline="< Community Access />">
       <LoginForm />
     </AuthShell>
   );

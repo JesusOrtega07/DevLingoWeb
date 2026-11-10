@@ -19,7 +19,7 @@ const LoginForm = () => {
     >
       <div className="flex flex-col gap-1.5">
         <h1 className="m-0 text-[26px] leading-[1.25] font-bold">Welcome back</h1>
-        <p className="m-0 text-[15px] leading-normal text-cream/66">Sign in to conduct and score mock interviews.</p>
+        <p className="m-0 text-[15px] leading-normal text-cream/66">Sign in to continue to DevLingo Community.</p>
       </div>
 
       {state.error && (

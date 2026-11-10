@@ -8,13 +8,20 @@
 // invitación de un solo uso (72 h) que se imprime UNA vez en la terminal. Cada corrida
 // invalida los enlaces anteriores sin usar de esas cuentas.
 //
-// El script .md de la entrevista se adjunta en la fase del parser.
+// La entrevista demo recibe scripts/jesus-junior-data-analyst.md como versión 1 de su script
+// (procesado con el mismo parser que usa el panel de admin).
 import "dotenv/config";
+
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { z } from "zod";
 
 import { PrismaClient, Role } from "../src/generated/prisma/client";
+import { readMarkdownFile } from "../src/features/scripts/file";
+import { parseInterviewScript } from "../src/features/scripts/parser";
 import { generateToken, hashToken } from "../src/lib/security/tokens";
 
 const INVITATION_TTL_MS = 72 * 60 * 60 * 1000;
@@ -58,6 +65,37 @@ const inviteIfPending = async (user: { id: string; email: string; passwordHash: 
   return `${seedEnv.APP_URL.replace(/\/$/, "")}/invite/${token}`;
 };
 
+const DEMO_SCRIPT = "jesus-junior-data-analyst.md";
+
+/** Adjunta el script demo como versión 1 si la entrevista aún no tiene ninguno. */
+const attachDemoScript = async (interviewId: string, uploadedById: string) => {
+  const existing = await prisma.interviewScript.count({ where: { interviewId } });
+  if (existing > 0) return;
+
+  const bytes = readFileSync(path.join(__dirname, "..", "scripts", DEMO_SCRIPT));
+  const file = readMarkdownFile(DEMO_SCRIPT, bytes);
+  if (!file.ok) throw new Error(`${DEMO_SCRIPT}: ${file.error}`);
+  const parsed = parseInterviewScript(file.text);
+  if (!parsed.ok) {
+    throw new Error(`${DEMO_SCRIPT}: ${parsed.errors.map((e) => e.message).join("; ")}`);
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const script = await tx.interviewScript.create({
+      data: {
+        interviewId,
+        version: 1,
+        fileName: DEMO_SCRIPT,
+        originalMd: file.text,
+        processed: parsed.data,
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+        uploadedById,
+      },
+    });
+    await tx.interview.update({ where: { id: interviewId }, data: { currentScriptId: script.id } });
+  });
+};
+
 const main = async () => {
   const admin = await upsertUser(seedEnv.SEED_ADMIN_EMAIL, seedEnv.SEED_ADMIN_NAME, Role.ADMIN);
   const users = [admin];
@@ -85,6 +123,8 @@ const main = async () => {
       update: {},
       create: { interviewId: interview.id, expertId: lili.id, assignedById: admin.id },
     });
+
+    await attachDemoScript(interview.id, admin.id);
   }
 
   console.log(`Seed listo${withDemo ? " (con datos demo)" : ""}.`);
