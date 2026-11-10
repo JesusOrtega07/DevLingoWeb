@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DevLingo — Sign in</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#141417}
+a{color:#D7A361}a:hover{color:#FDF3E6}
+</style>
+</helmet>
+<main style="width: 100%; min-height: 960px; box-sizing: border-box; padding: 72px 24px 48px; background: #141417; color: #FDF3E6; font-family: Montserrat, system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; gap: 40px">
+
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 12px">
+    <img src="./assets/183cab44f82ce36fba77fa8a8f62436e.svg" alt="DevLingo Community" style="width: 240px; height: 191px; display: block">
+    <p style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 15px; letter-spacing: 0.08em; color: #D7A361">&lt; English Expert Access /&gt;</p>
+  </div>
+
+  <form style="width: 100%; max-width: 440px; box-sizing: border-box; padding: 40px; border-radius: 20px; background: #1E1E22; border: 1px solid #2A2A30; display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <h1 style="margin: 0; font-size: 26px; line-height: 1.25; font-weight: 700">Welcome back</h1>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; color: rgba(253,243,230,0.66)">Sign in to conduct and score mock interviews.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="email" style="font-size: 14px; font-weight: 600">Email</label>
+      <input id="email" type="email" placeholder="lili@devlingo.community" style="height: 48px; box-sizing: border-box; padding: 0 16px; border-radius: 12px; border: 1px solid #2A2A30; background: #141417; color: #FDF3E6; font-family: Montserrat, sans-serif; font-size: 15px">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="password" style="font-size: 14px; font-weight: 600">Password</label>
+      <input id="password" type="password" value="password" style="height: 48px; box-sizing: border-box; padding: 0 16px; border-radius: 12px; border: 1px solid #2A2A30; background: #141417; color: #FDF3E6; font-family: Montserrat, sans-serif; font-size: 15px">
+    </div>
+    <button type="button" style="height: 52px; border: none; border-radius: 12px; background: #D7A361; color: #141417; font-family: Montserrat, sans-serif; font-size: 16px; font-weight: 700; cursor: pointer">Sign in</button>
+  </form>
+
+  <p style="margin: auto 0 0; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: rgba(253,243,230,0.6)">From “Hello, World!” to “Hello, everyone!”</p>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

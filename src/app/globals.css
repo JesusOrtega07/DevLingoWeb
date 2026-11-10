@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+/*
+ * Tokens base de DevLingo. Los valores exactos de cada pantalla (tamaños, espaciados,
+ * radios, sombras) se toman del mockup correspondiente en cada fase.
+ */
+@theme {
+  --color-ink: #141417;
+  --color-gold: #d7a361;
+  --color-cream: #fdf3e6;
+
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-ink);
+  color: var(--color-cream);
+}
