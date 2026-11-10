@@ -1,3 +1,4 @@
+import PageContainer from "@/components/layout/PageContainer";
 import AdminNav from "@/features/admin/components/AdminNav";
 import { requireRole } from "@/lib/dal";
 
@@ -5,10 +6,10 @@ import { requireRole } from "@/lib/dal";
 const AdminLayout = async ({ children }: LayoutProps<"/admin">) => {
   await requireRole("ADMIN");
   return (
-    <div className="flex flex-col gap-8">
+    <PageContainer className="flex flex-col gap-8">
       <AdminNav />
       {children}
-    </div>
+    </PageContainer>
   );
 };
 

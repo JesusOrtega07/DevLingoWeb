@@ -15,7 +15,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "access-link": "tsx tools/access-link.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.2",
