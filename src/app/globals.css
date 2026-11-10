@@ -8,6 +8,9 @@
   --color-ink: #141417;
   --color-gold: #d7a361;
   --color-cream: #fdf3e6;
+  --color-surface: #1e1e22;
+  --color-line: #2a2a30;
+  --color-danger: #e58a7e;
 
   --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
