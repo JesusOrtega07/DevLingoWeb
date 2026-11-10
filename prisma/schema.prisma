@@ -1,7 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// DevLingo Web: modelo de datos.
+// Docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client"
@@ -10,4 +8,237 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  EXPERT
+  MEMBER
+}
+
+enum InterviewStatus {
+  PENDING
+  INTERVIEWED
+}
+
+enum NextRound {
+  YES
+  MAYBE
+  NO
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cuentas, sesiones e invitaciones
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id                String    @id @default(cuid())
+  /// Siempre en minúsculas (se normaliza antes de guardar).
+  email             String    @unique
+  name              String
+  /// argon2id. Es null hasta que la persona acepta su invitación.
+  passwordHash      String?
+  role              Role
+  isActive          Boolean   @default(true)
+  failedLogins      Int       @default(0)
+  lockedUntil       DateTime? @db.Timestamptz(3)
+  passwordChangedAt DateTime? @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime  @updatedAt @db.Timestamptz(3)
+
+  sessions            Session[]
+  invitations         Invitation[]         @relation("InvitationUser")
+  invitationsCreated  Invitation[]         @relation("InvitationCreatedBy")
+  member              Member?
+  assignments         Assignment[]         @relation("AssignmentExpert")
+  assignmentsMade     Assignment[]         @relation("AssignmentAssignedBy")
+  scriptsUploaded     InterviewScript[]
+  evaluations         Evaluation[]         @relation("EvaluationExpert")
+  evaluationsUpdated  Evaluation[]         @relation("EvaluationUpdatedBy")
+  evaluationRevisions EvaluationRevision[]
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  /// sha256 del token de la cookie. El token en claro nunca se guarda.
+  tokenHash  String   @unique
+  userId     String
+  expiresAt  DateTime @db.Timestamptz(3)
+  lastSeenAt DateTime @default(now()) @db.Timestamptz(3)
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Enlace de un solo uso para que la persona defina su contraseña.
+/// También se usa cuando el admin genera un enlace nuevo por contraseña olvidada.
+model Invitation {
+  id          String    @id @default(cuid())
+  tokenHash   String    @unique
+  userId      String
+  createdById String?
+  expiresAt   DateTime  @db.Timestamptz(3)
+  usedAt      DateTime? @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+
+  user      User  @relation("InvitationUser", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("InvitationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
+
+/// Registro de intentos de login para el rate limiting.
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  /// email normalizado + IP
+  key       String
+  ip        String
+  success   Boolean
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([key, createdAt])
+  @@index([ip, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Integrantes y entrevistas
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Member {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  displayName String
+  /// Se captura en el panel de admin; no viene en el .md.
+  age         Int?
+  interest    String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  interviews Interview[]
+}
+
+model Interview {
+  id              String          @id @default(cuid())
+  memberId        String
+  position        String
+  interest        String
+  status          InterviewStatus @default(PENDING)
+  /// Versión vigente del script.
+  currentScriptId String?         @unique
+  createdAt       DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime        @updatedAt @db.Timestamptz(3)
+
+  member        Member            @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  currentScript InterviewScript?  @relation("CurrentScript", fields: [currentScriptId], references: [id], onDelete: SetNull)
+  scripts       InterviewScript[] @relation("ScriptVersions")
+  assignment    Assignment?
+  evaluation    Evaluation?
+
+  @@index([memberId])
+}
+
+/// Cada subida de .md crea una versión nueva; nunca se sobrescribe.
+model InterviewScript {
+  id           String   @id @default(cuid())
+  interviewId  String
+  version      Int
+  fileName     String
+  originalMd   String
+  /// Resultado del parser (Context, Script y Score sheet) en JSON.
+  processed    Json
+  sha256       String
+  uploadedById String
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  interview   Interview    @relation("ScriptVersions", fields: [interviewId], references: [id], onDelete: Cascade)
+  currentOf   Interview?   @relation("CurrentScript")
+  uploadedBy  User         @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  evaluations Evaluation[]
+
+  @@unique([interviewId, version])
+}
+
+/// Una English Expert por entrevista.
+model Assignment {
+  id           String   @id @default(cuid())
+  interviewId  String   @unique
+  expertId     String
+  assignedById String
+  assignedAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  interview  Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  expert     User      @relation("AssignmentExpert", fields: [expertId], references: [id], onDelete: Restrict)
+  assignedBy User      @relation("AssignmentAssignedBy", fields: [assignedById], references: [id], onDelete: Restrict)
+
+  @@index([expertId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Evaluaciones (sin puntuaciones numéricas)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Evaluation {
+  id            String    @id @default(cuid())
+  interviewId   String    @unique
+  expertId      String
+  /// Versión del script con la que se hizo la entrevista.
+  scriptId      String?
+  fluency       String
+  grammar       String
+  vocabulary    String
+  pronunciation String
+  confidence    String
+  strength      String
+  improve1      String
+  improve2      String
+  nextRound     NextRound
+  savedAt       DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
+  updatedById   String?
+
+  interview Interview            @relation(fields: [interviewId], references: [id], onDelete: Restrict)
+  expert    User                 @relation("EvaluationExpert", fields: [expertId], references: [id], onDelete: Restrict)
+  script    InterviewScript?     @relation(fields: [scriptId], references: [id], onDelete: SetNull)
+  updatedBy User?                @relation("EvaluationUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  mistakes  EvaluationMistake[]
+  revisions EvaluationRevision[]
+
+  @@index([expertId])
+}
+
+/// Filas dinámicas de "Mistakes heard".
+model EvaluationMistake {
+  id           String @id @default(cuid())
+  evaluationId String
+  position     Int
+  heSaid       String
+  better       String
+
+  evaluation Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  @@unique([evaluationId, position])
+}
+
+/// Copia de la evaluación anterior cada vez que se edita una ya guardada.
+model EvaluationRevision {
+  id           String   @id @default(cuid())
+  evaluationId String
+  snapshot     Json
+  editedById   String
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  evaluation Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  editedBy   User       @relation(fields: [editedById], references: [id], onDelete: Restrict)
+
+  @@index([evaluationId])
 }
